@@ -25,6 +25,8 @@ npm install
 npm run dev
 ```
 
+`.env.local` はプロジェクトのいちばん上（`package.json` と同じ場所）に置き、書き換えたら `npm run dev` を起動し直してください。キーは `NEXT_PUBLIC_SUPABASE_ANON_KEY` の代わりに `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` という名前でも読めます。
+
 http://localhost:3000 を開き、メールアドレスを入れて届いたリンクを同じブラウザで開くとログインできます。
 
 ### 3. Vercel
