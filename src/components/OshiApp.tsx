@@ -33,18 +33,34 @@ export default function OshiApp({ initialOshis, email, loadError }: Props) {
     toastTimer.current = setTimeout(() => setToastMsg(null), 2400);
   }, []);
 
+  // 同じ推しへの保存と削除は1つずつ順番に送る（古い保存が削除のあとに届いて復活しないように）
+  const inflight = useRef(new Map<string, Promise<void>>());
+  const deleted = useRef(new Set<string>());
+
+  const enqueue = useCallback((id: string, job: () => Promise<void>) => {
+    const next = (inflight.current.get(id) ?? Promise.resolve()).then(job, job);
+    inflight.current.set(id, next);
+    next.finally(() => {
+      if (inflight.current.get(id) === next) inflight.current.delete(id);
+    });
+    return next;
+  }, []);
+
   const flush = useCallback(
-    async (id: string) => {
+    (id: string) => {
       timers.current.delete(id);
-      const o = latest.current.find((x) => x.id === id);
-      if (!o) return;
-      const { id: _id, ...data } = o;
-      setSaving((n) => n + 1);
-      const { error } = await supabase.from("oshis").upsert({ id, data });
-      setSaving((n) => n - 1);
-      if (error) toast("保存できませんでした。通信状態を確認してください");
+      return enqueue(id, async () => {
+        if (deleted.current.has(id)) return;
+        const o = latest.current.find((x) => x.id === id);
+        if (!o) return;
+        const { id: _id, ...data } = o;
+        setSaving((n) => n + 1);
+        const { error } = await supabase.from("oshis").upsert({ id, data });
+        setSaving((n) => n - 1);
+        if (error) toast("保存できませんでした。通信状態を確認してください");
+      });
     },
-    [supabase, toast],
+    [enqueue, supabase, toast],
   );
 
   const scheduleSave = useCallback(
@@ -110,10 +126,15 @@ export default function OshiApp({ initialOshis, email, loadError }: Props) {
     const t = timers.current.get(id);
     if (t) clearTimeout(t);
     timers.current.delete(id);
+    deleted.current.add(id);
     setOshis((list) => list.filter((o) => o.id !== id));
     open(null);
-    const { error } = await supabase.from("oshis").delete().eq("id", id);
-    toast(error ? "削除できませんでした" : "削除しました");
+    let failed = false;
+    await enqueue(id, async () => {
+      const { error } = await supabase.from("oshis").delete().eq("id", id);
+      failed = !!error;
+    });
+    toast(failed ? "削除できませんでした" : "削除しました");
   };
 
   const exportData = () => {

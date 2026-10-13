@@ -59,6 +59,10 @@ export default function Home({ oshis, onOpen, onAdd, onSample, onExport, onImpor
           <div className="row">
             <button className="btn primary" onClick={onAdd}>＋ 最初の推しを追加</button>
             <button className="btn" onClick={onSample}>サンプルを入れて試す</button>
+            <label className="btn" style={{ cursor: "pointer" }}>
+              バックアップを読み込む
+              <input type="file" accept="application/json,.json" hidden onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) onImport(f); }} />
+            </label>
           </div>
         </div>
         <Card o={sampleOshi()} />

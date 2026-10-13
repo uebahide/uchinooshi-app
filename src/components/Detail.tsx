@@ -17,6 +17,9 @@ type Props = {
   toast: (msg: string) => void;
 };
 
+/** その月の最大日数。生まれ年が分からないことが多いので、2月は29日まで選べるようにする */
+const daysInMonth = (m: number) => new Date(2000, m, 0).getDate();
+
 function ChipsEditor({ items, cls, onAdd, onRemove, inputId }: { items: string[]; cls: string; onAdd: (v: string) => void; onRemove: (i: number) => void; inputId: string }) {
   const [v, setV] = useState("");
   return (
@@ -108,13 +111,17 @@ export default function Detail({ o, update, onDelete, makerOpen, setMakerOpen, t
           <div className="row">
             <input className="field" id="f-by" type="number" inputMode="numeric" placeholder="年（任意）" style={{ width: "7.5em" }} aria-label="生まれた年"
               value={b.y ?? ""} onChange={(e) => { const v = parseInt(e.target.value, 10); update((x) => { x.birthday = { ...x.birthday, y: Number.isFinite(v) ? v : null }; }); }} />
-            <select className="field" id="f-bm" aria-label="月" value={b.m ?? ""} onChange={(e) => update((x) => { x.birthday = { ...x.birthday, m: e.target.value ? +e.target.value : null }; })}>
+            <select className="field" id="f-bm" aria-label="月" value={b.m ?? ""} onChange={(e) => update((x) => {
+              const m = e.target.value ? +e.target.value : null;
+              const d = x.birthday.d && m && x.birthday.d > daysInMonth(m) ? daysInMonth(m) : x.birthday.d;
+              x.birthday = { ...x.birthday, m, d };
+            })}>
               <option value="">月</option>
               {Array.from({ length: 12 }, (_, i) => <option key={i} value={i + 1}>{i + 1}月</option>)}
             </select>
             <select className="field" id="f-bd" aria-label="日" value={b.d ?? ""} onChange={(e) => update((x) => { x.birthday = { ...x.birthday, d: e.target.value ? +e.target.value : null }; })}>
               <option value="">日</option>
-              {Array.from({ length: 31 }, (_, i) => <option key={i} value={i + 1}>{i + 1}日</option>)}
+              {Array.from({ length: b.m ? daysInMonth(b.m) : 31 }, (_, i) => <option key={i} value={i + 1}>{i + 1}日</option>)}
             </select>
           </div>
           {u && b.y && <span className="status">次の誕生日で {u.year - b.y} 歳</span>}
