@@ -3,8 +3,9 @@ import { cookies } from "next/headers";
 import { assertSupabaseEnv, supabaseKey, supabaseUrl } from "./env";
 
 export async function createClient() {
-  assertSupabaseEnv();
+  // 先に cookies() を読んで、このページが毎回サーバーで描画される（ビルド時に実行されない）ようにする
   const cookieStore = await cookies();
+  assertSupabaseEnv();
   return createServerClient(
     supabaseUrl,
     supabaseKey,

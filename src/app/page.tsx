@@ -4,6 +4,8 @@ import { normalize } from "@/lib/oshi";
 import { createClient } from "@/lib/supabase/server";
 import type { Oshi } from "@/lib/types";
 
+export const dynamic = "force-dynamic";
+
 export default async function Page() {
   const supabase = await createClient();
   const {
