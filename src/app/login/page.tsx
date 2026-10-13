@@ -5,8 +5,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <main className="login">
       <h1 style={{ fontSize: "2rem", fontWeight: 900 }}>推しノート</h1>
-      <p>大切な人のこと、ここに全部残そう。メールアドレスにログイン用のリンクを送ります。</p>
-      {error === "link" && <p className="err">ログインリンクが無効か期限切れです。もう一度送ってください。</p>}
+      <p>大切な人のこと、ここに全部残そう。メールアドレスとパスワードでログインします。</p>
+      {error === "link" && <p className="err">メールのリンクが無効か期限切れです。もう一度ログインしてください。</p>}
       <LoginForm />
     </main>
   );
