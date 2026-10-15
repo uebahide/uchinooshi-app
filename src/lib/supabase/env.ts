@@ -7,6 +7,9 @@ export const supabaseKey =
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY ||
   "";
 
+// 共有DB（uchinooshi）の中で、このアプリが使うスキーマ。DB の定義は uebahide/supabase-db にある。
+export const supabaseSchema = "oshi";
+
 export function assertSupabaseEnv() {
   if (!supabaseUrl || !supabaseKey) {
     throw new Error(

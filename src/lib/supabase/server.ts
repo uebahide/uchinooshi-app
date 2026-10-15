@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { assertSupabaseEnv, supabaseKey, supabaseUrl } from "./env";
+import { assertSupabaseEnv, supabaseKey, supabaseSchema, supabaseUrl } from "./env";
 
 export async function createClient() {
   // 先に cookies() を読んで、このページが毎回サーバーで描画される（ビルド時に実行されない）ようにする
@@ -10,6 +10,7 @@ export async function createClient() {
     supabaseUrl,
     supabaseKey,
     {
+      db: { schema: supabaseSchema },
       cookies: {
         getAll() {
           return cookieStore.getAll();
