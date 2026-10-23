@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Detail from "./Detail";
 import Home from "./Home";
+import Profile from "./Profile";
 import { todayStr } from "@/lib/dates";
 import { newOshi, normalize, sampleOshi } from "@/lib/oshi";
 import { createClient } from "@/lib/supabase/client";
@@ -18,6 +19,7 @@ export default function OshiApp({ initialOshis, email, loadError }: Props) {
   const router = useRouter();
   const [oshis, setOshis] = useState<Oshi[]>(initialOshis);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
   const [makerOpen, setMakerOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(loadError ? "読み込みに失敗しました。ページを開き直してください" : null);
   const [saving, setSaving] = useState(0);
@@ -84,18 +86,39 @@ export default function OshiApp({ initialOshis, email, loadError }: Props) {
     return () => window.removeEventListener("pagehide", onHide);
   }, [flush]);
 
-  // 戻るボタンで一覧に戻れるように、開いている推しを履歴に残す
+  // 戻るボタンで一覧（編集中なら詳細カード）に戻れるように、開いている推しを履歴に残す
   useEffect(() => {
-    const onPop = () => setOpenId(new URLSearchParams(location.search).get("oshi"));
+    const onPop = () => {
+      const p = new URLSearchParams(location.search);
+      setOpenId(p.get("oshi"));
+      setEditing(p.has("edit"));
+    };
     onPop();
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
-  const open = (id: string | null, maker = false) => {
+  const open = (id: string | null, edit = false, maker = false) => {
     setMakerOpen(maker);
     setOpenId(id);
-    history.pushState(null, "", id ? `?oshi=${id}` : location.pathname);
+    setEditing(edit);
+    history.pushState(null, "", id ? `?oshi=${id}${edit ? "&edit" : ""}` : location.pathname);
+    window.scrollTo(0, 0);
+  };
+
+  // 編集を終えたら詳細カードへ。編集画面へは詳細カードから来たときだけ履歴を戻る
+  const finishEdit = () => {
+    if (history.state?.fromProfile) history.back();
+    else {
+      setEditing(false);
+      history.replaceState(null, "", `?oshi=${openId}`);
+      window.scrollTo(0, 0);
+    }
+  };
+
+  const startEdit = () => {
+    setEditing(true);
+    history.pushState({ fromProfile: true }, "", `?oshi=${openId}&edit`);
     window.scrollTo(0, 0);
   };
 
@@ -119,7 +142,7 @@ export default function OshiApp({ initialOshis, email, loadError }: Props) {
     setOshis((list) => [...list, o]);
     latest.current = [...latest.current, o];
     scheduleSave(o.id, 0);
-    if (openIt) open(o.id, true);
+    if (openIt) open(o.id, true, true);
   };
 
   const remove = async (id: string) => {
@@ -185,7 +208,9 @@ export default function OshiApp({ initialOshis, email, loadError }: Props) {
           <small>{saving > 0 ? "保存中…" : "自動保存"}</small>
         </div>
         <div className="row">
-          {current ? (
+          {current && editing ? (
+            <button className="btn primary" onClick={finishEdit}>✓ 完了</button>
+          ) : current ? (
             <button className="btn ghost" onClick={() => open(null)}>← 一覧へ</button>
           ) : (
             <>
@@ -196,7 +221,9 @@ export default function OshiApp({ initialOshis, email, loadError }: Props) {
         </div>
       </header>
 
-      {current ? (
+      {current && !editing ? (
+        <Profile key={current.id} o={current} onEdit={startEdit} />
+      ) : current ? (
         <Detail key={current.id} o={current} update={update(current.id)} onDelete={() => remove(current.id)} makerOpen={makerOpen} setMakerOpen={setMakerOpen} toast={toast} />
       ) : (
         <Home
